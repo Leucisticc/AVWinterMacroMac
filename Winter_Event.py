@@ -17,25 +17,6 @@ from pynput import keyboard as pynput_keyboard
 from pynput.keyboard import Controller
 from pathlib import Path
 
-
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__)) 
-RESOURCES_DIR = os.path.join(PROJECT_ROOT, "Resources")
-WINTER_DIR = os.path.join(RESOURCES_DIR, "Winter")
-PROJECT_ROOT = Path(__file__).resolve().parent
-RESOURCES_DIR = PROJECT_ROOT / "Resources"
-
-# print("PROJECT_ROOT:", PROJECT_ROOT)
-# print("RESOURCES_DIR:", RESOURCES_DIR, "exists=", os.path.exists(RESOURCES_DIR))
-# print("WINTER_DIR:", WINTER_DIR, "exists=", os.path.exists(WINTER_DIR))
-# print("TEST IMAGE PATH:", os.path.exists(bt._resource_path("Winter/Bunny_hb.png")))
-
-def asset_path(rel: str) -> str:
-    """
-    Convert 'Winter/Bunny_hb.png' → absolute path inside Resources folder
-    """
-    rel = rel.replace("/", "/")   # normalize Windows slashes
-    return str((RESOURCES_DIR / rel).resolve())
-
 class Cur_Settings: pass
 
 global Settings
@@ -60,7 +41,7 @@ ROUND_RESTART = 140 # 0 will make it so this doesnt happen, change it to what ro
 
 AINZ_SPELLS = False #Keep FALSE!
 
-SLOT_ONE = (495, 789, 570, 866)
+SLOT_ONE = (499, 150, 122, 110)
 REG_SPEED = (495, 789, 570, 866)
 REG_TAK = (495, 789, 570, 866)
 
@@ -102,44 +83,7 @@ Settings.Units_Placeable.append("Doom")
 if not USE_KAGUYA:
     Settings.Units_Placeable.remove("Kag")
 
-# Failsafe key
-global g_toggle
-g_toggle = False
-def toggle():
-    global g_toggle
-    g_toggle = not g_toggle
-    if g_toggle == False:
-        args = list(sys.argv)
-        try:
-            if "--restart" in args:
-                args.remove("--restart")
-            if "--stopped" in args:
-                args.remove("--stopped")
-        except Exception as e:
-            print(e)
-        sys.stdout.flush()
-        subprocess.Popen([sys.executable, *args, "--stopped"])
-        os._exit(0)
 
-
-
-# -------------------------
-# Hotkey System (Mac Safe)
-# -------------------------
-def toggle():
-    global g_toggle
-    g_toggle = not g_toggle
-    print(f"Macro running: {g_toggle}")
-
-    if not g_toggle:
-        args = list(sys.argv)
-        if "--restart" in args:
-            args.remove("--restart")
-        if "--stopped" in args:
-            args.remove("--stopped")
-
-        subprocess.Popen([sys.executable] + args + ["--stopped"])
-        os._exit(0)
 
 
 def kill():
@@ -150,7 +94,7 @@ def on_press(key):
     try:
         if hasattr(key, "char") and key.char:
             if key.char.lower() == Settings.STOP_START_HOTKEY.lower():
-                toggle()
+                g_toggle()
             elif key.char.lower() == "k":
                 kill()
     except:
@@ -195,7 +139,7 @@ def tap(key):
     keyboard_controller.press(key)
     keyboard_controller.release(key)
 
-def write_text(text, interval=0.2):
+def write_text(text, interval=0.5):
     for char in text:
         keyboard_controller.press(char)
         keyboard_controller.release(char)
@@ -295,13 +239,6 @@ def safe_restart():
     subprocess.Popen([sys.executable] + args)
     os._exit(0)
 
-
-# -------------------------
-# Screen Debug Info
-# -------------------------
-SCREEN_W, SCREEN_H = pyautogui.size()
-print(f"Screen size detected: {SCREEN_W} x {SCREEN_H}")
-
 # Wait for start screen
 def wait_start(delay: int | None = None):
     i = 0
@@ -329,10 +266,18 @@ def wait_start(delay: int | None = None):
     return False
 
 
+#Game mechanics
+
 def quick_rts(): # Returns to spawn
     locations =[(232, 873), (1153, 503), (1217, 267)]
     for loc in locations:
         click(loc[0], loc[1], delay =0.1)
+        time.sleep(0.2)
+        
+def slow_rts(): # Returns to spawn
+    locations =[(232, 873), (1153, 503), (1217, 267)]
+    for loc in locations:
+        click(loc[0], loc[1], delay =1)
         time.sleep(0.2)
         
 def directions(area: str, unit: str | None=None): # This is for all the pathing
@@ -528,7 +473,7 @@ def upgrader(upgrade: str):
         if upgrade == 'fortune':
             pyautogui.moveTo(775, 500)  # ensure scroll is inside panel
             time.sleep(0.2)
-            pyautogui.scroll(100)
+            scroll(100)
             time.sleep(0.5)
 
             pos = (955, 475)
@@ -547,7 +492,7 @@ def upgrader(upgrade: str):
             time.sleep(0.2)
 
             for _ in range(6):
-                pyautogui.scroll(-1)
+                scroll(-1)
                 time.sleep(0.2)
 
             pos = (955, 635)
@@ -558,7 +503,7 @@ def upgrader(upgrade: str):
                 time.sleep(0.8)
 
             pyautogui.moveTo(775, 500)  # ensure scroll is inside panel
-            pyautogui.scroll(100)
+            scroll(100)
             click(1112, 309, delay =0.1)
             print("Damage complete")
 
@@ -568,7 +513,7 @@ def upgrader(upgrade: str):
             time.sleep(0.2)
 
             for _ in range(3):
-                pyautogui.scroll(-1)
+                scroll(-1)
                 time.sleep(0.2)
 
 
@@ -580,7 +525,7 @@ def upgrader(upgrade: str):
                 time.sleep(0.8)
 
             pyautogui.moveTo(775, 500)  # ensure scroll is inside panel
-            pyautogui.scroll(100)   
+            scroll(100)   
             click(1112, 309, delay =0.1)
             print("Range complete")
 
@@ -597,7 +542,7 @@ def upgrader(upgrade: str):
                 time.sleep(0.8)
 
             pyautogui.moveTo(775, 500)  # ensure scroll is inside panel
-            pyautogui.scroll(100)
+            scroll(100)
             click(1112, 309, delay =0.1)
             print("Speed complete")
 
@@ -607,7 +552,7 @@ def upgrader(upgrade: str):
 
             
             for _ in range(9):
-                pyautogui.scroll(-1)
+                scroll(-1)
                 time.sleep(0.2)
 
             pos = (955, 635)
@@ -618,7 +563,7 @@ def upgrader(upgrade: str):
                 time.sleep(0.8)
 
             pyautogui.moveTo(775, 500)  # ensure scroll is inside panel
-            pyautogui.scroll(100)
+            scroll(100)
             click(1112, 309, delay =0.1)
             print("Armor complete")
 
@@ -824,195 +769,6 @@ def place_unit(unit: str, pos: tuple[int, int], close: bool | None = None, regio
 
     if close:
         click(607, 381, delay =0.1)
-
-    print(f"Placed {unit} at {pos}")
-
-def place_unit(unit: str, pos: tuple[int, int], close: bool | None = None, region: tuple | None = None):
-    # -----------------------
-    # Debug helpers
-    # -----------------------
-    DEBUG = False
-    DEBUG_EVERY_N_LOOPS = 3          # save a screenshot every N placement loops
-    UI_PIXEL = (607, 381)            # your “close/back” pixel
-    UI_TARGET = (255, 255, 255)      # expected color when closed/ready
-    UI_TOL = 25
-    SAMPLE_HALF = 2
-
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    debug_dir = os.path.join(RESOURCES_DIR, "DebugShots")
-    os.makedirs(debug_dir, exist_ok=True)
-
-    def lt_rb_to_region(l, t, r, b):
-        return (l, t, r - l, b - t)
-
-    def stamp():
-        return datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-
-    def ui_seen():
-        """Return the current seen RGB for UI pixel."""
-        try:
-            return pixel_color_seen(UI_PIXEL[0], UI_PIXEL[1], sample_half=SAMPLE_HALF)
-        except Exception as e:
-            print(f"[DEBUG] ui_seen error: {e}")
-            return None
-
-    def ui_is_target():
-        """Return True if UI pixel matches target."""
-        try:
-            return pixel_matches_seen(UI_PIXEL[0], UI_PIXEL[1], UI_TARGET, tol=UI_TOL, sample_half=SAMPLE_HALF)
-        except Exception as e:
-            print(f"[DEBUG] ui_is_target error: {e}")
-            return False
-
-
-    # Tunables
-    time_out_place = 20     # placement loop attempts
-    time_out_icon = 50      # time to wait for hotbar icon to appear
-
-    if DEBUG:
-        print(f"\n[place_unit] unit={unit} pos={pos} close={close} region={region}")
-        print(f"[place_unit] starting UI pixel seen={ui_seen()} target={UI_TARGET} tol={UI_TOL}")
-
-
-    # 1) Wait for hotbar icon to exist
-    icon_path = asset_path(f"Winter/{unit}_hb.png")
-
-    if DEBUG:
-        print(f"[place_unit] waiting for icon: {icon_path} (timeout={time_out_icon})")
-
-    icon_found = False
-    while time_out_icon > 0 and g_toggle:
-        try:
-            icon_found = bt.does_exist(icon_path, confidence=0.8, grayscale=False, region=region) if region else \
-                         bt.does_exist(icon_path, confidence=0.8, grayscale=False)
-        except Exception as e:
-            print(f"[DEBUG] bt.does_exist(icon) error: {e}")
-            icon_found = False
-
-        if icon_found:
-            break
-
-        time_out_icon -= 1
-        time.sleep(0.3)
-
-    if not icon_found:
-        print(f"[place_unit][WARN] icon NOT found for {unit} (giving up icon stage).")
-        # snap("ICON_NOT_FOUND")
-    else:
-        if DEBUG:
-            print(f"[place_unit] icon found -> clicking icon now")
-
-        try:
-            # Some bt.click_image implementations return True/False — log it either way
-            clicked = bt.click_image(icon_path, confidence=0.8, grayscale=False, offset=(0, 0), region=region) if region else \
-                      bt.click_image(icon_path, confidence=0.8, grayscale=False, offset=(0, 0))
-            if DEBUG:
-                print(f"[place_unit] bt.click_image returned: {clicked}")
-        except Exception as e:
-            print(f"[place_unit][ERROR] bt.click_image failed: {e}")
-            # snap("ICON_CLICK_ERROR")
-
-    time.sleep(0.2)
-
-    # -----------------------
-    # 2) Initial placement click
-    # -----------------------
-    if DEBUG:
-        print(f"[place_unit] initial click at placement position {pos}")
-        # snap("BEFORE_PLACE_CLICK")
-
-    click(pos[0], pos[1], delay=0.67)
-    time.sleep(0.5)
-
-    if DEBUG:
-        print(f"[place_unit] after initial click, UI pixel seen={ui_seen()}, ui_is_target={ui_is_target()}")
-
-    # -----------------------
-    # 3) Placement loop
-    # -----------------------
-    loops = 0
-    while not ui_is_target():
-        loops += 1
-        time_out_place -= 1
-
-        if not g_toggle:
-            print("[place_unit] stopped (g_toggle=False)")
-            # snap("STOPPED")
-            break
-
-        if time_out_place <= 0:
-            print("[place_unit][WARN] timed out trying to place unit.")
-            print(f"[place_unit][WARN] last UI pixel seen={ui_seen()} expected={UI_TARGET}")
-            # snap("PLACE_TIMEOUT")
-            break
-
-        if DEBUG:
-            print(f"[place_unit] loop={loops} remaining={time_out_place} ui_seen={ui_seen()}")
-
-        if DEBUG and (loops % DEBUG_EVERY_N_LOOPS == 0):
-            # snap(f"LOOP_{loops}")
-            pass
-
-        # Try clicking the placement point again
-        click(pos[0], pos[1], delay=0.67)
-
-        # Optional: your cancel/nudge behaviour
-        time.sleep(0.1)
-        tap('q')
-        time.sleep(0.5)
-
-        # Another quick click
-        click(pos[0], pos[1], delay=0.1)
-        time.sleep(1)
-
-        # Check UnitExists
-        try:
-            exists = bt.does_exist("Winter/UnitExists.png", confidence=0.9, grayscale=True)
-        except Exception as e:
-            print(f"[DEBUG] bt.does_exist(UnitExists) error: {e}")
-            exists = False
-
-        if DEBUG:
-            print(f"[place_unit] UnitExists={exists}, ui_is_target={ui_is_target()}, ui_seen={ui_seen()}")
-
-        if exists:
-            if DEBUG:
-                print("[place_unit] UnitExists detected -> stopping loop")
-            # snap("UNIT_EXISTS_DETECTED")
-            break
-
-        if ui_is_target():
-            if DEBUG:
-                print("[place_unit] UI pixel became target -> stopping loop")
-            # snap("UI_TARGET_REACHED")
-            break
-
-        # Re-arm by clicking the hotbar icon again
-        if DEBUG:
-            print("[place_unit] re-arming by clicking hotbar icon again")
-
-        try:
-            clicked = bt.click_image(icon_path, confidence=0.8, grayscale=False, offset=(0, 0), region=region) if region else \
-                      bt.click_image(icon_path, confidence=0.8, grayscale=False, offset=(0, 0))
-            if DEBUG:
-                print(f"[place_unit] re-arm bt.click_image returned: {clicked}")
-        except Exception as e:
-            print(f"[place_unit][ERROR] re-arm click_image failed: {e}")
-            # snap("REARM_CLICK_ERROR")
-
-        time.sleep(0.2)
-
-    # -----------------------
-    # 4) Close UI if requested
-    # -----------------------
-    if close:
-        if DEBUG:
-            print("[place_unit] close=True -> clicking close/back pixel")
-        click(UI_PIXEL[0], UI_PIXEL[1], delay =0.1)
-
-    if DEBUG:
-        print(f"[place_unit] finished. final ui_seen={ui_seen()} ui_is_target={ui_is_target()}")
-        # snap("END")
 
     print(f"Placed {unit} at {pos}")
 
@@ -1254,12 +1010,13 @@ def main():
                 quick_rts()
                 time.sleep(1.5)
                 got_mirko = True
-                if bt.does_exist("Winter/Bunny_hb.png",confidence=0.7,grayscale=False, region=SLOT_ONE):
-                    print("Got mirko")
-                    got_mirko = True
-                else:
-                    print("Didnt detect mirko, retrying purchase")
+                # if bt.does_exist("Winter/Bunny_hb.png",confidence=0.7,grayscale=False, region=SLOT_ONE):
+                #     print("Got mirko")
+                #     got_mirko = True
+                # else:
+                #     print("Didnt detect mirko, retrying purchase")
             click(835, 226, delay =0.1) # Start Match
+            avM.reset_wave_cache()
             
             
             place_unit('Bunny', rabbit_pos[0], close=True)
@@ -1300,13 +1057,25 @@ def main():
             # Tak's placement + max
             
 
-            if bt.does_exist("Winter/Tak_Detect.png",confidence=0.8,grayscale=True):
-                bt.click_image("Winter/Tak_Detect.png",confidence=0.8,grayscale=True,offset=(0,-20))   
-                click(50,50,delay=0.1,right_click=True,dont_move=True)
-            else:
-                press('w')
-                time.sleep(Settings.TAK_W_DELAY)
-                release('w')
+            if bt.does_exist("Winter/Tak_Detect.png", confidence=0.7, grayscale=True):
+                clicked = False
+
+                # try up to 6 times (fast), then fall back
+                for _ in range(6):
+                    ok = bt.click_image("Winter/Tak_Detect.png",confidence=0.7,grayscale=True,offset=(0, -20))
+                    if ok:
+                        clicked = True
+                        break
+                    time.sleep(0.15)
+
+                if clicked:
+                    click(50, 50, delay=0.1, right_click=True, dont_move=True)
+                else:
+                    print("[Tak_Detect] saw image but click_image kept failing -> fallback movement")
+                    press('w')
+                    time.sleep(Settings.TAK_W_DELAY)
+                    release('w')
+
             if TAK_FINDER:
                 path_tak = False
                 while not path_tak:
@@ -1349,6 +1118,7 @@ def main():
             upgrader('fortune')
             click(1112, 312, delay =1)
             quick_rts()
+            slow_rts()
             
             # Start auto upgrading first rabbit
             secure_select(rabbit_pos[0])
@@ -1361,6 +1131,7 @@ def main():
             upgrader('damage')
             click(1112, 312, delay =0.1)
             quick_rts()
+            slow_rts()
             
             # Start auto upgrading rabbit 1 & 2
             secure_select(rabbit_pos[1])
@@ -1385,27 +1156,30 @@ def main():
             wave_19 = False
 
             while not wave_19 and g_toggle:
-                w = avM.get_wave_from_screen()  # re-read each loop
+                w = avM.get_wave_stable()
+                print("Wave read:", w)
 
-                if w is not None:
-                    print("Wave reached:", w)
+                # ✅ guard against None / unreadable values
+                if w is None or w == -1:
+                    time.sleep(0.5)
+                    continue
 
-                    if w >= 19:
-                        # DIR_BUYMAINLANES
-                        press('d')
-                        time.sleep(Settings.BUY_MAIN_LANE_DELAYS[0])
-                        release('d')
+                if w >= 19:
+                    # DIR_BUYMAINLANES
+                    press('d')
+                    time.sleep(Settings.BUY_MAIN_LANE_DELAYS[0])
+                    release('d')
 
-                        tap('e'); tap('e')
+                    tap('e'); tap('e')
 
-                        press('w')
-                        time.sleep(Settings.BUY_MAIN_LANE_DELAYS[1])
-                        release('w')
+                    press('w')
+                    time.sleep(Settings.BUY_MAIN_LANE_DELAYS[1])
+                    release('w')
 
-                        tap('e'); tap('e')
+                    tap('e'); tap('e')
 
-                        wave_19 = True
-                        break
+                    wave_19 = True
+                    break
 
                 time.sleep(0.5)
     
@@ -1440,15 +1214,14 @@ def main():
             g_toggle= True
             ainzplaced=False
             while not gamble_done:
-                for i in range(5):
+                for i in range(50):
                     tap('e')
-                    time.sleep(0.05)
+                    time.sleep(0.1)
                 
                 
                 full_bar = bt.does_exist("Winter/Full_Bar.png", confidence=0.7, grayscale=True)
-                no_yen = bt.does_exist("Winter/NO_YEN.png", confidence=0.7, grayscale=True)
+                no_yen = bt.does_exist("Winter/NO_YEN.png", confidence=0.6, grayscale=True)
 
-                print(f"[TEST] full_bar={full_bar} no_yen={no_yen}")
                 if full_bar or no_yen:
                     print("Getting Units")
                     quick_rts()
@@ -1774,11 +1547,12 @@ def main():
                 wave_150 = False
                 done_path = False
 
-                while not wave_150:
-                    w = avM.get_wave_from_screen()
+                while not wave_150 and g_toggle:
+                    w = avM.get_wave_stable()
+                    # print("[wave]", w)
 
-                    # If OCR failed, skip this loop tick safely
-                    if w is None:
+                    # ✅ unreadable -> skip tick safely
+                    if w is None or w == -1:
                         time.sleep(0.5)
                         continue
 
@@ -1791,19 +1565,14 @@ def main():
                         tap('f')  # Unit Manager Hotkey
                         time.sleep(0.7)
 
-                        ok = bt.click_image(
-                            "Winter/LookDownFinder.png",
-                            confidence=0.8,
-                            grayscale=False,
-                            offset=(0, -50)   # <- make this a tuple, not a list
-                        )
+                        ok = bt.click_image("Winter/LookDownFinder.png",confidence=0.8,grayscale=False,offset=(0, -50))
                         print("[LookDownFinder click] ok =", ok)
 
                         tap('f')
 
-                        # ONLY start spamming E after the menu / setup step is done
+                        # spam E while we do the path (stops when done_path becomes True)
                         def spam_e():
-                            while not done_path:
+                            while not done_path and g_toggle:
                                 tap('e')
                                 time.sleep(0.2)
                             print("Done buying lanes")
@@ -1812,43 +1581,53 @@ def main():
 
                         clicks_look_down = [(401, 404), (649, 777), (750, 875)]
                         for pt in clicks_look_down:
-                            click(pt[0], pt[1], delay=0.1)
+                            click(pt[0], pt[1], delay=1)
                             time.sleep(1 if pt == (649, 777) else 0.2)
 
                         press('o'); time.sleep(1); release('o')
 
-                        press('s'); time.sleep(Settings.BUY_FINAL_LANE_DELAYS[0]); release('s')
+                        press('s')
+                        time.sleep(Settings.BUY_FINAL_LANE_DELAYS[0])
+                        release('s')
 
-                        tap('v'); time.sleep(1)
+                        tap('v')
+                        time.sleep(1)
 
-                        press('a'); time.sleep(Settings.BUY_FINAL_LANE_DELAYS[1]); release('a')
-                        press('d'); time.sleep(Settings.BUY_FINAL_LANE_DELAYS[2]); release('d')
+                        press('a')
+                        time.sleep(Settings.BUY_FINAL_LANE_DELAYS[1])
+                        release('a')
+
+                        press('d')
+                        time.sleep(Settings.BUY_FINAL_LANE_DELAYS[2])
+                        release('d')
 
                         tap('v')
                         quick_rts()
                         time.sleep(2)
 
-                        done_path = True
+                        done_path = True  # ✅ stop spam thread
 
-                    # Exit when 150 is reached (or higher)
+                    # Exit when 150 is reached (or higher, within sane range)
                     if 150 <= w <= 170:
                         wave_150 = True
                     else:
-                        # Your repair logic, but using stable wave reads
-                        if (w != -1 and w % 2 == 0) or w == 139:
+                        # ✅ only safe modulo checks when w is a real int
+                        if (w % 2 == 0) or (w == 139):
                             repair_barricades()
                             quick_rts()
 
                     time.sleep(2)
+
             else:
                 wave_140 = False
                 done_path = False
 
-                while not wave_140:
-                    w = avM.get_wave_from_screen()
+                while not wave_140 and g_toggle:
+                    w = avM.get_wave_stable()
+                    # print("[wave]", w)
 
-                    # OCR failed -> skip safely
-                    if w is None:
+                    # ✅ unreadable -> skip tick safely
+                    if w is None or w == -1:
                         time.sleep(0.5)
                         continue
 
@@ -1857,7 +1636,7 @@ def main():
                         print("Confirmed wave 139 — running pre-140 logic")
 
                         def spam_e():
-                            while not done_path:
+                            while not done_path and g_toggle:
                                 tap('e')
                                 time.sleep(0.2)
                             print("Done buying lanes")
@@ -1867,12 +1646,15 @@ def main():
                         quick_rts()
                         tap('f')
                         time.sleep(0.7)
-                        bt.click_image("Winter/LookDownFinder.png", confidence=0.8, grayscale=False, offset=[0, -50])
+
+                        ok = bt.click_image("Winter/LookDownFinder.png",confidence=0.8,grayscale=False,offset=(0, -50))
+                        print("[LookDownFinder click] ok =", ok)
+
                         tap('f')
 
                         clicks_look_down = [(404, 400), (649, 772), (745, 858)]
                         for pt in clicks_look_down:
-                            click(pt[0], pt[1], delay=0.1)
+                            click(pt[0], pt[1], delay=1)
                             time.sleep(1 if pt == (649, 772) else 0.3)
 
                         press('o'); time.sleep(1); release('o')
@@ -1896,37 +1678,36 @@ def main():
                         quick_rts()
                         time.sleep(2)
 
-                        # stop spam thread
-                        done_path = True
+                        done_path = True  # ✅ stop spam thread
 
-                    # Exit when 140 is reached (or higher)
+                    # Exit when 140 is reached (or higher, within sane range)
                     if 140 <= w <= 170:
                         wave_140 = True
                     else:
-                        # Only do modulo checks when w is a real number
+                        # ✅ safe modulo checks
                         if (w % 2 == 0) or (w == 139 and done_path):
                             repair_barricades()
                             quick_rts()
 
                     time.sleep(2)
             num_runs+=1
-            # print(f"Run over, runs: {num_runs}")
-            # try:
-            #         victory = wt.screen_shot_memory()
-            #         runtime = f"{datetime.now()-start_of_run}"
+            print(f"Run over, runs: {num_runs}")
+            try:
+                    victory = wt.screen_shot_memory()
+                    runtime = f"{datetime.now()-start_of_run}"
                 
-            #         g = Thread(target=webhook.send_webhook,
-            #             kwargs={
+                    g = Thread(target=webhook.send_webhook,
+                        kwargs={
 
-            #                     "run_time": f"{str(runtime).split('.')[0]}",
-            #                     "num_runs": num_runs,
-            #                     "task_name": "Winter Event",
-            #                     "img": victory,
-            #                 },
-            #             )            
-            #         g.start()
-            # except Exception as e:
-            #     print(f" error {e}")
+                                "run_time": f"{str(runtime).split('.')[0]}",
+                                "num_runs": num_runs,
+                                "task_name": "Winter Event",
+                                "img": victory,
+                            },
+                        )            
+                    g.start()
+            except Exception as e:
+                print(f" error {e}")
                 
             if USE_KAGUYA:    
                 ainz_pos = Settings.Unit_Positions['Ainz']
@@ -1940,40 +1721,33 @@ def main():
                 tap('f')
                 
             match_restarted = False
-            while not match_restarted:
-                avM.restart_match() 
-                time.sleep(0.5)
-                if avM.get_wave() == 0:
-                    match_restarted = True
-                time.sleep(5)
 
-# def disconnect_checker():
-#     time.sleep(60) # intial detect delay
-#     while True:
-#        if bt.does_exist("Winter/Disconnected.png",confidence=0.9,grayscale=True,region=(525,353,972,646)) or bt.does_exist("Winter/Disconnect_Two.png",confidence=0.9,grayscale=True,region=(525,353,972,646)):
-#         print("found disconnected")
-#         try:
-#             args = list(sys.argv)
-#             if "--stopped" in args:
-#                 args.remove("--stopped")
-#             if "--restart" in args:
-#                 args.remove("--restart")    
-#             sys.stdout.flush()
-#             subprocess.Popen([sys.executable, *args])
-#             os._exit(0)
-#         except Exception as e:
-#             print("Error")
-#         time.sleep(6)
-# def _osascript(script: str) -> bool:
-#     """
-#     Runs AppleScript. Returns True if command succeeded.
-#     Note: requires Accessibility permissions for Terminal/Python if controlling UI.
-#     """
-#     try:
-#         subprocess.run(["osascript", "-e", script], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-#         return True
-#     except Exception:
-#         return False
+            while not match_restarted and g_toggle:
+
+                print("[Restart] Attempting restart...")
+                avM.restart_match()
+                avM.restart_match()
+
+                time.sleep(4)
+                avM.reset_wave_cache()
+
+                # Prefer UI confirmation over wave OCR
+                if wait_start(delay=0.5):
+                    print("[Restart] Start screen detected.")
+                    match_restarted = True
+                    break
+
+                # Fallback: allow wave==0 confirmation
+                w = avM.get_wave_stable()
+                print("[Restart] Wave after restart:", w)
+
+                if w == 0:
+                    print("[Restart] Wave reset confirmed.")
+                    match_restarted = True
+                    break
+
+                print("[Restart] Restart not confirmed, retrying...")
+                time.sleep(2)
 
 def _osascript(script: str) -> bool:
     try:
@@ -1984,75 +1758,11 @@ def _osascript(script: str) -> bool:
         return False
 
 def focus_roblox():
-    # Brings Roblox to front (best effort)
     _osascript('tell application "Roblox" to activate')
     time.sleep(0.2)
 
 # Loss Detector
 Thread(target=detect_loss, daemon=True).start()
-
-#Test Gamble
-def test_gamble_loop(max_seconds: int = 60):
-        """
-        Isolated test for the 'gamble' loop logic.
-        Runs for max_seconds then exits.
-        """
-        print("[TEST] Starting gamble loop test...")
-        start = time.time()
-
-        # Optional: force you into the right place first
-        # quick_rts()
-        # directions('3')
-        # time.sleep(2)
-
-        gamble_done = False
-        loops = 0
-
-        while not gamble_done:
-            loops += 1
-
-            # stop conditions
-            if not g_toggle:
-                print("[TEST] g_toggle is False -> stopping test")
-                break
-            if time.time() - start > max_seconds:
-                print("[TEST] max_seconds reached -> stopping test")
-                break
-
-            # your E spam
-            for _ in range(5):
-                tap('e')
-                time.sleep(0.05)  # tiny delay helps reliability
-
-            # detection (add prints so you can see what's happening)
-            full_bar = bt.does_exist("Winter/Full_Bar.png", confidence=0.7, grayscale=False)
-            no_yen = bt.does_exist("Winter/NO_YEN.png", confidence=0.7, grayscale=False)
-
-            print(f"[TEST] loop={loops} full_bar={full_bar} no_yen={no_yen}")
-
-            if full_bar or no_yen:
-                print("[TEST] Trigger hit -> quick_rts + place_hotbar_units + directions('3')")
-                quick_rts()
-                time.sleep(3)
-                place_hotbar_units()
-                directions('3')
-
-            time.sleep(0.2)
-
-        print("[TEST] Gamble loop test finished.")
-
-
-
-
-
-
-#Enter into terminal: python3 Winter_Event.py --test-gamble
-if "--test-gamble" in sys.argv:
-    g_toggle = True  # so it actually runs
-    test_gamble_loop(max_seconds=120)
-    sys.exit(0)
-
-
 
 # Auto-start logic stays the same
 if Settings.AUTO_START:
@@ -2068,22 +1778,38 @@ for z in range(3):
 # ✅ Focus Roblox once before any clicks/keys
 focus_roblox()
 
+# ---- STARTUP ----
+
 if g_toggle:
-    if avM.get_wave() >= 1:
+    w = avM.get_wave_stable()
+
+    # Only restart if we got a real valid wave number
+    if isinstance(w, int) and w >= 1:
         avM.restart_match()
 
-    tap('w'); tap('a'); tap('s'); tap('d')
+    # release potential stuck movement
+    tap('w')
+    tap('a')
+    tap('s')
+    tap('d')
+
     main()
+
 else:
     while not g_toggle:
         time.sleep(1)
 
-    # ✅ Focus again when user manually starts (optional but helpful)
+    # optional but recommended
     focus_roblox()
 
-    if avM.get_wave() >= 1:
+    w = avM.get_wave_stable()
+
+    if isinstance(w, int) and w >= 1:
         avM.restart_match()
 
-    release('w'); release('a'); release('s'); release('d')
+    release('w')
+    release('a')
+    release('s')
+    release('d')
 
     main()
