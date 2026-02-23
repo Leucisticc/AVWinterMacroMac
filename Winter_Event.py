@@ -49,8 +49,9 @@ pyautogui.FAILSAFE = False
 pyautogui.PAUSE = 0
 keyboard_controller = Controller()
 
+# Info_Path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Info.json")
 
-# Settings JSON
+#Settings JSON
 def load_json_data():
     JSON_DATA = None
     if os.path.isfile(WE_Json):
@@ -75,16 +76,12 @@ else:
     time.sleep(10)
     sys.exit()
     
-    
-    
 print("Loaded settings")
 Settings.Units_Placeable.append("Doom")
 
+start = datetime.now()
 if not USE_KAGUYA:
     Settings.Units_Placeable.remove("Kag")
-
-
-
 
 def kill():
     os._exit(0)
@@ -188,32 +185,38 @@ def _seen_pixel_from_screenshot(img, x: int, y: int, sample_half: int = 1):
     mid = len(px) // 2
     return (rs[mid], gs[mid], bs[mid])
 
+def _safe_screenshot(retries: int = 3, retry_delay: float = 0.12):
+    """
+    Best-effort screenshot helper for macOS capture flakiness.
+    Returns a PIL image or None.
+    """
+    for _ in range(max(1, retries)):
+        try:
+            return pyautogui.screenshot()
+        except Exception as e:
+            last_error = e
+            time.sleep(retry_delay)
+    print(f"[screenshot] failed after retries: {last_error}")
+    return None
+
 def pixel_color_seen(x: int, y: int, sample_half: int = 1):
-    img = pyautogui.screenshot()
+    img = _safe_screenshot()
+    if img is None:
+        return (0, 0, 0)
     return _seen_pixel_from_screenshot(img, x, y, sample_half=sample_half)
 
 def pixel_matches_seen(x: int, y: int, rgb: tuple[int, int, int], tol: int = 20, sample_half: int = 1) -> bool:
-    img = pyautogui.screenshot()
+    img = _safe_screenshot()
+    if img is None:
+        return False
     r, g, b = _seen_pixel_from_screenshot(img, x, y, sample_half=sample_half)
     return (abs(r - rgb[0]) <= tol and abs(g - rgb[1]) <= tol and abs(b - rgb[2]) <= tol)
 
-def wait_for_pixel(
-    x: int,
-    y: int,
-    rgb: tuple[int, int, int],
-    tol: int = 20,
-    timeout: float = 10.0,
-    interval: float = 0.1,
-    sample_half: int = 1
-) -> bool:
-    """
-    Waits until pixel matches RGB within tolerance.
-    Returns True if matched, False if timeout.
-    """
+def wait_for_pixel(x: int,y: int,rgb: tuple[int, int, int],tol: int = 20,timeout: float = 10.0,interval: float = 0.1,sample_half: int = 1) -> bool:
+
     start = time.time()
 
     while time.time() - start < timeout:
-        img = pyautogui.screenshot()
 
         if pixel_matches_seen(x, y, rgb,tol=tol,sample_half=sample_half):
             return True
@@ -221,6 +224,121 @@ def wait_for_pixel(
         time.sleep(interval)
 
     return False
+
+
+
+
+
+
+
+
+
+
+
+# def _safe_screenshot(region=None, retries: int = 3, retry_delay: float = 0.08):
+#     last_error = None
+#     for attempt in range(max(1, retries)):
+#         try:
+#             return pyautogui.screenshot(region=region)
+#         except Exception as e:
+#             last_error = e
+#             time.sleep(retry_delay * (attempt + 1))
+#     print(f"[screenshot] failed after retries: {last_error}")
+#     return None
+
+
+# def _seen_pixel_from_screenshot(img, x: int, y: int, sample_half: int = 1, region=None):
+#     w, h = img.size
+
+#     if region is not None:
+#         left0, top0, _, _ = region
+#         xp = int(x - left0)
+#         yp = int(y - top0)
+#         xp = max(0, min(w - 1, xp))
+#         yp = max(0, min(h - 1, yp))
+#     else:
+#         sw, sh = pyautogui.size()
+#         iw, ih = img.size
+#         sx = iw / sw
+#         sy = ih / sh
+#         xp = int(x * sx)
+#         yp = int(y * sy)
+#         xp = max(0, min(w - 1, xp))
+#         yp = max(0, min(h - 1, yp))
+
+#     left = max(0, xp - sample_half)
+#     top = max(0, yp - sample_half)
+#     right = min(w - 1, xp + sample_half)
+#     bottom = min(h - 1, yp + sample_half)
+
+#     px = []
+#     for yy in range(top, bottom + 1):
+#         for xx in range(left, right + 1):
+#             p = img.getpixel((xx, yy))
+#             if isinstance(p, tuple) and len(p) >= 3:
+#                 px.append((p[0], p[1], p[2]))
+
+#     if not px:
+#         return (0, 0, 0)
+
+#     rs = sorted(p[0] for p in px)
+#     gs = sorted(p[1] for p in px)
+#     bs = sorted(p[2] for p in px)
+#     mid = len(px) // 2
+#     return (rs[mid], gs[mid], bs[mid])
+
+
+# def _tiny_region_around(x: int, y: int, sample_half: int):
+#     size = sample_half * 2 + 1
+#     left = x - sample_half
+#     top = y - sample_half
+#     return (left, top, size, size)
+
+
+# def pixel_color_seen(x: int, y: int, sample_half: int = 1):
+#     region = _tiny_region_around(x, y, sample_half)
+#     img = _safe_screenshot(region=region)
+#     if img is None:
+#         return (0, 0, 0)
+#     return _seen_pixel_from_screenshot(img, x, y, sample_half=sample_half, region=region)
+
+
+# def pixel_matches_seen(x: int, y: int, rgb: tuple[int, int, int], tol: int = 20, sample_half: int = 1) -> bool:
+#     region = _tiny_region_around(x, y, sample_half)
+#     img = _safe_screenshot(region=region)
+#     if img is None:
+#         return False
+#     r, g, b = _seen_pixel_from_screenshot(img, x, y, sample_half=sample_half, region=region)
+#     return (abs(r - rgb[0]) <= tol and abs(g - rgb[1]) <= tol and abs(b - rgb[2]) <= tol)
+
+
+# def wait_for_pixel(
+#     x: int,
+#     y: int,
+#     rgb: tuple[int, int, int],
+#     tol: int = 20,
+#     timeout: float = 10.0,
+#     interval: float = 0.1,
+#     sample_half: int = 1
+# ) -> bool:
+#     start = time.time()
+#     while time.time() - start < timeout:
+#         if pixel_matches_seen(x, y, rgb, tol=tol, sample_half=sample_half):
+#             return True
+#         time.sleep(interval)
+#     return False
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # -------------------------
@@ -898,7 +1016,7 @@ def on_failure():
     time_out = 60/0.4
     click(Settings.REPLAY_BUTTON_POS[0],Settings.REPLAY_BUTTON_POS[1],delay =0.1)
     time.sleep(1)
-    while bt.does_exist("Winter/DetectLoss.png",confidence=0.7,grayscale=False):
+    while bt.does_exist("Winter/DetectLoss.png",confidence=0.7,grayscale=True):
         if time_out<0:
             #on_disconnect()
             print("should disconnect")
@@ -907,6 +1025,7 @@ def on_failure():
         time_out-=1
         time.sleep(0.4)
     click(Settings.REPLAY_BUTTON_POS[0],Settings.REPLAY_BUTTON_POS[1],delay =0.1)
+    click(750, 567, delay = 0.5)
     
 
 def sell_kaguya(): # Sells kaguya (cant reset while domain is active)
@@ -930,32 +1049,58 @@ def sell_kaguya(): # Sells kaguya (cant reset while domain is active)
 
 def detect_loss():
     time.sleep(10)
-    print("Starting loss detection")
+    print("starting loss detection")
 
-    loss_rgb_1 = (235, 73, 67)
-    loss_rgb_2 = (222, 55, 45)
 
-    while True:
-        # screenshot-based pixel match (Retina-safe)
-        is_loss = (
-            pixel_matches_seen(532, 287, loss_rgb_1, tol=10, sample_half=2)
-            or pixel_matches_seen(693, 283, loss_rgb_2, tol=10, sample_half=2)
-        )
+    while g_toggle:
+        try:
+            loss_found = bt.does_exist("Winter/DetectLoss.png", confidence=0.7, grayscale=True)
+        except Exception as e:
+            print(f"[detect_loss] does_exist error: {e}")
+            loss_found = False
 
-        if is_loss:
-            print("found loss -> attempting on_failure()")
+        if loss_found:
+            print("found loss screen")
+
+            try:
+                new_Data = load_json_data()
+                new_Data["num_runs"] += 1
+                new_Data["losses"] += 1
+                new_Data["runtime"] = f"{str((datetime.now() - start)).split('.')[0]}"
+                # save_data(new_Data)
+            except Exception as e:
+                print(f"stats error: {e}")
+
             try:
                 on_failure()
-                time.sleep(6)
             except Exception as e:
-                print(f"on_failure crashed ({e}) -> restarting script")
+                print(f"[detect_loss] on_failure error: {e}")
+
+            while g_toggle:
+                try:
+                    still_loss = bt.does_exist("Winter/DetectLoss.png", confidence=0.7, grayscale=True)
+                except Exception as e:
+                    print(f"[detect_loss] does_exist error (wait loop): {e}")
+                    still_loss = False
+
+                if not still_loss:
+                    break
+                time.sleep(1)
+
+            print("relaunching")
+
+            try:
                 args = list(sys.argv)
-                for flag in ("--stopped", "--restart"):
-                    if flag in args:
-                        args.remove(flag)
+                if "--stopped" in args:
+                    args.remove("--stopped")
+                if "--restart" in args:
+                    args.remove("--restart")
+
                 sys.stdout.flush()
                 subprocess.Popen([sys.executable, *args])
                 os._exit(0)
+            except Exception as e:
+                print(f"[detect_loss] relaunch error: {e}")
 
         time.sleep(1)
         
@@ -1010,7 +1155,7 @@ def main():
                 quick_rts()
                 time.sleep(1.5)
                 got_mirko = True
-                # if bt.does_exist("Winter/Bunny_hb.png",confidence=0.7,grayscale=False, region=SLOT_ONE):
+                # if bt.does_exist("Winter/Bunny_hb.png",confidence=0.7,grayscale=False):
                 #     print("Got mirko")
                 #     got_mirko = True
                 # else:
@@ -1032,7 +1177,7 @@ def main():
                 quick_rts()
                 time.sleep(1.5)
                 got_mirko_two = True
-                # if bt.does_exist("Winter/Bunny_hb.png",confidence=0.7,grayscale=False, region=SLOT_ONE):
+                # if bt.does_exist("Winter/Bunny_hb.png",confidence=0.7,grayscale=False):
                 #     print("Got mirko")
                 #     got_mirko_two = True
                 # else:
@@ -1044,14 +1189,25 @@ def main():
             tap('e')
             tap('e')
             tap('e')
-            place_unit('Speed', speed_pos[0], close=True)
-            place_unit('Speed', speed_pos[1], close=True)
-            place_unit('Speed', speed_pos[2], close=True)
-            for pos in speed_pos:
-                click(pos[0], pos[1], delay =0.1)
-                time.sleep(0.5)
-                tap('z')
-                time.sleep(0.5)
+            # place_unit('Speed', speed_pos[0], close=True)
+            # place_unit('Speed', speed_pos[1], close=True)
+            # place_unit('Speed', speed_pos[2], close=True)
+            # for pos in speed_pos:
+            #     click(pos[0], pos[1], delay =0.1)
+            #     time.sleep(0.5)
+            #     tap('z')
+            #     time.sleep(0.5)
+            # click(607, 381, delay =0.1)
+            
+            
+            
+            
+            place_unit('Speed', speed_pos[0], close=False)
+            tap('z')
+            place_unit('Speed', speed_pos[1], close=False)
+            tap('z')
+            place_unit('Speed', speed_pos[2], close=False)
+            tap('z')
             click(607, 381, delay =0.1)
             
             # Tak's placement + max
@@ -1071,6 +1227,11 @@ def main():
                 if clicked:
                     click(50, 50, delay=0.1, right_click=True, dont_move=True)
                 else:
+                    print("[Tak_Detect] saw image but click_image kept failing -> fallback movement")
+                    press('w')
+                    time.sleep(Settings.TAK_W_DELAY)
+                    release('w')
+            else:
                     print("[Tak_Detect] saw image but click_image kept failing -> fallback movement")
                     press('w')
                     time.sleep(Settings.TAK_W_DELAY)
@@ -1220,9 +1381,10 @@ def main():
                 
                 
                 full_bar = bt.does_exist("Winter/Full_Bar.png", confidence=0.7, grayscale=True)
-                no_yen = bt.does_exist("Winter/NO_YEN.png", confidence=0.6, grayscale=True)
+                no_yen = bt.does_exist("Winter/NO_YEN.png", confidence=0.5, grayscale=True)
+                no_yen2 = bt.does_exist("Winter/NO_YEN2.png", confidence=0.5, grayscale=True)
 
-                if full_bar or no_yen:
+                if full_bar or no_yen or no_yen2:
                     print("Getting Units")
                     quick_rts()
                     time.sleep(3)
@@ -1681,7 +1843,8 @@ def main():
                         done_path = True  # ✅ stop spam thread
 
                     # Exit when 140 is reached (or higher, within sane range)
-                    if 140 <= w <= 170:
+                    if w == 140:
+                        print(f"Wave Read: {w}")
                         wave_140 = True
                     else:
                         # ✅ safe modulo checks
