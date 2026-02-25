@@ -27,6 +27,8 @@ WE_Json = os.path.join(Settings_Path,"Winter_Event.json")
 
 VERSION_N = '1.499 beta'
 
+CHECK_LOOTBOX = False # Leave false for faster runs
+
 ROBLOX_PLACE_ID = 16146832113
 
 PRIVATE_SERVER_CODE = "" # Not in settings so u dont accidently share ur ps lol
@@ -492,38 +494,39 @@ def directions(area: str, unit: str | None=None): # This is for all the pathing
             e_delay = 0.7
             timeout = 2.5/e_delay
             at_location = False
-            while not at_location:
-                tap('e')
-                time.sleep(e_delay)
-                if bt.does_exist("Winter/LootBox.png",confidence=0.7,grayscale=True):
-                    at_location = True
-                if  bt.does_exist("Winter/Full_Bar.png",confidence=0.7,grayscale=True):
-                    at_location = True
-                if  bt.does_exist("Winter/NO_YEN.png",confidence=0.7,grayscale=True):
-                    at_location = True
-                if timeout < 0:
-                    quick_rts()
-                    tap('v')
-                    time.sleep(1)
-                    press('a')
-                    time.sleep(Settings.AREA_3_DELAYS[0])
-                    release('a')
+            if CHECK_LOOTBOX == True:
+                while not at_location:
+                    tap('e')
+                    time.sleep(e_delay)
+                    if bt.does_exist("Winter/LootBox.png",confidence=0.7,grayscale=True):
+                        at_location = True
+                    if  bt.does_exist("Winter/Full_Bar.png",confidence=0.7,grayscale=True):
+                        at_location = True
+                    if  bt.does_exist("Winter/NO_YEN.png",confidence=0.7,grayscale=True):
+                        at_location = True
+                    if timeout < 0:
+                        quick_rts()
+                        tap('v')
+                        time.sleep(1)
+                        press('a')
+                        time.sleep(Settings.AREA_3_DELAYS[0])
+                        release('a')
 
-                    press('s')
-                    time.sleep(Settings.AREA_3_DELAYS[1])
-                    release('s')
+                        press('s')
+                        time.sleep(Settings.AREA_3_DELAYS[1])
+                        release('s')
 
-                    press('d')
-                    time.sleep(Settings.AREA_3_DELAYS[2])
-                    release('d')
+                        press('d')
+                        time.sleep(Settings.AREA_3_DELAYS[2])
+                        release('d')
 
-                    press('s')
-                    time.sleep(Settings.AREA_3_DELAYS[3])
-                    release('s')
-                    tap('v')
-                    time.sleep(2)
-                    timeout = 3/e_delay
-                timeout-=1
+                        press('s')
+                        time.sleep(Settings.AREA_3_DELAYS[3])
+                        release('s')
+                        tap('v')
+                        time.sleep(2)
+                        timeout = 3/e_delay
+                    timeout-=1
             print("At lootbox")
 
         if area == '4': #  Upgrader location
@@ -784,9 +787,11 @@ def upgrader(upgrade: str):
 def secure_select(pos: tuple[int, int]):
     click(pos[0], pos[1], delay =0.1)
     time.sleep(0.5)
+    attempts = 3
 
     # Wait until the “selected” UI pixel is white
-    while not pixel_matches_seen(607, 381, (255, 255, 255), tol=25, sample_half=2):
+    while not pixel_matches_seen(607, 381, (255, 255, 255), tol=25, sample_half=2) or attempts<=0:
+        attempts -= 1
         if bt.does_exist('Winter/Erza_Armor.png', confidence=0.8, grayscale=True):
             click(752, 548, delay =0.1)
             time.sleep(0.6)
@@ -1317,7 +1322,7 @@ def main():
             while not wave_19 and g_toggle:
                 w = avM.get_wave_stable()
                 print("Wave read:", w)
-
+                
                 # ✅ guard against None / unreadable values
                 if w is None or w == -1:
                     time.sleep(0.5)
@@ -1363,6 +1368,7 @@ def main():
             upgrader('armor')
             click(1112, 312, delay =0.1)
             quick_rts()
+            slow_rts()
             directions('3')
             
             Ben_Upgraded = False
@@ -1550,7 +1556,7 @@ def main():
                         global AINZ_SPELLS
                         if not AINZ_SPELLS:
                             AINZ_SPELLS = True
-                        click(pos[0], pos[1], delay=0.67) # Place world destroyer + auto upgrade
+                        click(pos[0], pos[1], delay=0.67) # Place world destroyer
                         time.sleep(0.5)
                         while not pixel_matches_seen(607, 381, (255, 255, 255), tol=20, sample_half=2):
                             if not g_toggle:
