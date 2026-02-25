@@ -791,7 +791,7 @@ def secure_select(pos: tuple[int, int]):
     attempts = 3
 
     # Wait until the “selected” UI pixel is white
-    while not pixel_matches_seen(607, 381, (255, 255, 255), tol=25, sample_half=2) or attempts<=0:
+    while not pixel_matches_seen(607, 381, (255, 255, 255), tol=25, sample_half=2) and attempts<=0:
         attempts -= 1
         print(f"Attempts to select: {attempts}")
         if bt.does_exist('Winter/Erza_Armor.png', confidence=0.8, grayscale=True):
