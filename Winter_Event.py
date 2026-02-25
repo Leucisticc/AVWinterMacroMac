@@ -25,7 +25,7 @@ Settings = Cur_Settings()
 Settings_Path = os.path.join(os.path.dirname(os.path.abspath(__file__)),"Settings")
 WE_Json = os.path.join(Settings_Path,"Winter_Event.json")
 
-VERSION_N = '1.49'
+VERSION_N = '1.499 beta'
 
 ROBLOX_PLACE_ID = 16146832113
 
@@ -37,7 +37,7 @@ USE_BUU = False #Best unit for highest curency gain
 
 TAK_FINDER = False # turn off if it runs into a wall while trying to find tak
 
-ROUND_RESTART = 140 # 0 will make it so this doesnt happen, change it to what round u want it to restart
+ROUND_RESTART = 150 # 0 will make it so this doesnt happen, change it to what round u want it to restart
 
 AINZ_SPELLS = False #Keep FALSE!
 
@@ -76,7 +76,6 @@ else:
     time.sleep(10)
     sys.exit()
     
-print("Loaded settings")
 Settings.Units_Placeable.append("Doom")
 
 start = datetime.now()
@@ -855,7 +854,7 @@ def place_unit(unit: str, pos: tuple[int, int], close: bool | None = None, regio
         click(pos[0], pos[1], delay=0.67)
 
         seen = pixel_color_seen(607, 381, sample_half=2)
-        print(f"Target Color: {white_ui}, seen: {seen}")
+        # print(f"Target Color: {white_ui}, seen: {seen}")
 
         time.sleep(0.1)
         tap('q')  # your “cancel/rotate/nudge” behaviour
@@ -1048,8 +1047,7 @@ def sell_kaguya(): # Sells kaguya (cant reset while domain is active)
         time.sleep(0.4)
 
 def detect_loss():
-    time.sleep(10)
-    print("starting loss detection")
+    print("Loss detection: Active")
 
 
     while g_toggle:
@@ -1369,22 +1367,26 @@ def main():
             
             Ben_Upgraded = False
             Erza_Upgraded = False
+            Gamer_Upgraded = False
+            Kuzan_Upgraded = False
             
             # Lucky box
             gamble_done = False
             g_toggle= True
             ainzplaced=False
+            prevent_inf = 5
             while not gamble_done:
                 for i in range(50):
                     tap('e')
                     time.sleep(0.1)
-                
+                prevent_inf -= 1
+                print(f"Prevent Inf: {prevent_inf}")
                 
                 full_bar = bt.does_exist("Winter/Full_Bar.png", confidence=0.7, grayscale=True)
                 no_yen = bt.does_exist("Winter/NO_YEN.png", confidence=0.5, grayscale=True)
-                no_yen2 = bt.does_exist("Winter/NO_YEN2.png", confidence=0.5, grayscale=True)
 
-                if full_bar or no_yen or no_yen2:
+                if full_bar or no_yen or (prevent_inf <= 0):
+                    prevent_inf = 5
                     print("Getting Units")
                     quick_rts()
                     time.sleep(3)
@@ -1454,6 +1456,7 @@ def main():
                         Erza_Upgraded = True
                         # more gamble
                         directions('3')
+                        
                 if not Ben_Upgraded:
                     print("Upgrading Beni")
                     if Settings.Unit_Placements_Left['Beni'] == 0:
@@ -1477,9 +1480,58 @@ def main():
                         Ben_Upgraded = True
                         # more gamble
                         directions('3')
+                        
+                if not Gamer_Upgraded:
+                    print("Upgrading Hero")
+                    if Settings.Unit_Placements_Left['Hero'] == 0:
+                        quick_rts()
+                        time.sleep(1)
+                        for gamer in Settings.Unit_Positions['Hero']:
+                            click(gamer[0],gamer[1],delay =0.1)
+                            secure_select((gamer[0],gamer[1]))
+                            time.sleep(0.5)
+                            tap('z')
+                            set_boss()
+                            time.sleep(0.5)
+                            click(607, 381, delay =0.1)
+                            directions('5')
+                            buy_monarch()
+                            quick_rts()
+                            time.sleep(0.5)
+                            secure_select((gamer[0],gamer[1]))
+                            time.sleep(0.5)
+                            click(607, 381, delay =0.1)
+                        Gamer_Upgraded = True
+                        # more gamble
+                        directions('3')
+                        
+                if not Kuzan_Upgraded:
+                    print("Upgrading Kuzan")
+                    if Settings.Unit_Placements_Left['Kuzan'] == 0:
+                        quick_rts()
+                        time.sleep(1)
+                        for kuzan in Settings.Unit_Positions['Kuzan']:
+                            click(kuzan[0],kuzan[1],delay =0.1)
+                            secure_select((kuzan[0],kuzan[1]))
+                            time.sleep(0.5)
+                            tap('z')
+                            set_boss()
+                            time.sleep(0.5)
+                            click(607, 381, delay =0.1)
+                            directions('5')
+                            buy_monarch()
+                            quick_rts()
+                            time.sleep(0.5)
+                            secure_select((kuzan[0],kuzan[1]))
+                            time.sleep(0.5)
+                            click(607, 381, delay =0.1)
+                        Kuzan_Upgraded = True
+                        # more gamble
+                        directions('3')
+                        
                 if not ainzplaced:
-                    print("Ainz stuff")
                     if Settings.Unit_Placements_Left['Ainz'] == 0: # Ainz thingy
+                        print("Ainz Setup")
                         ainzplaced = True
                         quick_rts()
                         time.sleep(1)
@@ -1650,43 +1702,40 @@ def main():
                 time.sleep(0.5)
                 click(607, 381, delay =0.1)
              
-               
-
                 
-            for gamer in Settings.Unit_Positions['Hero']:
+            # for gamer in Settings.Unit_Positions['Hero']:
                  
 
-                click(gamer[0],gamer[1],delay =0.1)
-                time.sleep(0.5)
-                tap('z')
-                set_boss()
-                time.sleep(0.5)
-                click(607, 381, delay =0.1)
-                directions('5')
-                buy_monarch()
-                quick_rts()
-                time.sleep(0.5)
-                click(gamer[0],gamer[1],delay =0.1)
-                time.sleep(0.5)
-                click(607, 381, delay =0.1)
+            #     click(gamer[0],gamer[1],delay =0.1)
+            #     time.sleep(0.5)
+            #     tap('z')
+            #     set_boss()
+            #     time.sleep(0.5)
+            #     click(607, 381, delay =0.1)
+            #     directions('5')
+            #     buy_monarch()
+            #     quick_rts()
+            #     time.sleep(0.5)
+            #     click(gamer[0],gamer[1],delay =0.1)
+            #     time.sleep(0.5)
+            #     click(607, 381, delay =0.1)
              
             
-            for kuzan in Settings.Unit_Positions['Kuzan']:
-                click(kuzan[0],kuzan[1],delay =0.1)
-                time.sleep(0.5)
-                tap('z')
-                set_boss()
-                time.sleep(0.5)
-                click(607, 381, delay =0.1)
-                directions('5')
-                buy_monarch()
-                quick_rts()
-                time.sleep(0.5)
-                click(kuzan[0],kuzan[1],delay =0.1)
-                time.sleep(0.5)
-                click(607, 381, delay =0.1)
+            # for kuzan in Settings.Unit_Positions['Kuzan']:
+            #     click(kuzan[0],kuzan[1],delay =0.1)
+            #     time.sleep(0.5)
+            #     tap('z')
+            #     set_boss()
+            #     time.sleep(0.5)
+            #     click(607, 381, delay =0.1)
+            #     directions('5')
+            #     buy_monarch()
+            #     quick_rts()
+            #     time.sleep(0.5)
+            #     click(kuzan[0],kuzan[1],delay =0.1)
+            #     time.sleep(0.5)
+            #     click(607, 381, delay =0.1)
 
-             
                
             for esc in Settings.Unit_Positions['Escanor']:
                 click(esc[0],esc[1],delay =0.1)
@@ -1711,7 +1760,7 @@ def main():
 
                 while not wave_150 and g_toggle:
                     w = avM.get_wave_stable()
-                    # print("[wave]", w)
+                    # print("Wave Read: ", w)
 
                     # ✅ unreadable -> skip tick safely
                     if w is None or w == -1:
@@ -1770,7 +1819,7 @@ def main():
                         done_path = True  # ✅ stop spam thread
 
                     # Exit when 150 is reached (or higher, within sane range)
-                    if 150 <= w <= 170:
+                    if w == 150:
                         wave_150 = True
                     else:
                         # ✅ only safe modulo checks when w is a real int
@@ -1919,6 +1968,7 @@ def _osascript(script: str) -> bool:
         return True
     except Exception:
         return False
+    
 
 def focus_roblox():
     _osascript('tell application "Roblox" to activate')
@@ -1940,7 +1990,7 @@ for z in range(3):
 
 # ✅ Focus Roblox once before any clicks/keys
 focus_roblox()
-
+        
 # ---- STARTUP ----
 
 if g_toggle:
