@@ -26,6 +26,7 @@ Settings_Path = os.path.join(os.path.dirname(os.path.abspath(__file__)),"Setting
 WE_Json = os.path.join(Settings_Path,"Winter_Event.json")
 
 VERSION_N = '1.499 beta'
+print(f"Version: {VERSION_N}")
 
 CHECK_LOOTBOX = False # Leave false for faster runs
 
@@ -792,6 +793,7 @@ def secure_select(pos: tuple[int, int]):
     # Wait until the “selected” UI pixel is white
     while not pixel_matches_seen(607, 381, (255, 255, 255), tol=25, sample_half=2) or attempts<=0:
         attempts -= 1
+        print(f"Attempts to select: {attempts}")
         if bt.does_exist('Winter/Erza_Armor.png', confidence=0.8, grayscale=True):
             click(752, 548, delay =0.1)
             time.sleep(0.6)
