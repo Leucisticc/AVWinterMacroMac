@@ -25,7 +25,7 @@ Settings = Cur_Settings()
 Settings_Path = os.path.join(os.path.dirname(os.path.abspath(__file__)),"Settings")
 WE_Json = os.path.join(Settings_Path,"Winter_Event.json")
 
-VERSION_N = '1.499 beta'
+VERSION_N = '1.499a beta'
 print(f"Version: {VERSION_N}")
 
 CHECK_LOOTBOX = False # Leave false for faster runs
@@ -804,16 +804,102 @@ def secure_select(pos: tuple[int, int]):
     print(f"Selected unit at {pos}")
 
 #Image recognition
+def _resolve_image_path(img_path: str) -> str:
+    """
+    Preserve legacy `Winter/...` callsites by resolving against common asset roots.
+    """
+    candidates = []
+
+    # 1) As provided (absolute path or cwd-relative)
+    candidates.append(Path(img_path))
+
+    script_dir = Path(__file__).resolve().parent
+
+    # 2) Relative to this script
+    candidates.append(script_dir / img_path)
+
+    # 3) Relative to Resources/ (matches botTools asset layout)
+    candidates.append(script_dir / "Resources" / img_path)
+
+    for candidate in candidates:
+        try:
+            if candidate.is_file():
+                return str(candidate)
+        except Exception:
+            continue
+
+    # Fall back to original path so pyautogui error still includes caller input
+    return img_path
+
+
+def _retina_to_screen_coords(x: int, y: int) -> tuple[int, int]:
+    """
+    Convert locateOnScreen/screenshot pixel coords to OS screen coords on Retina displays.
+    """
+    img = _safe_screenshot()
+    if img is None:
+        return int(x), int(y)
+
+    sw, sh = pyautogui.size()
+    iw, ih = img.size
+    if iw <= 0 or ih <= 0:
+        return int(x), int(y)
+
+    scale_x = sw / iw
+    scale_y = sh / ih
+    return int(x * scale_x), int(y * scale_y)
+
+
 def find_image_center(img_path: str, confidence: float = 0.8, grayscale: bool = False, region=None):
     """
     Returns (cx, cy, box) where box=(left, top, width, height), or (None, None, None) if not found.
     region is (left, top, width, height)
     """
-    box = pyautogui.locateOnScreen(img_path, confidence=confidence, grayscale=grayscale, region=region)
+    resolved_img_path = _resolve_image_path(img_path)
+    box = pyautogui.locateOnScreen(resolved_img_path, confidence=confidence, grayscale=grayscale, region=region)
     if not box:
         return None, None, None
     cx, cy = pyautogui.center(box)
     return int(cx), int(cy), box
+
+
+def click_image_center(
+    img_path: str,
+    confidence: float = 0.8,
+    grayscale: bool = False,
+    offset=(0, 0),
+    region=None,
+    delay: float = 0.1,
+    right_click: bool = False,
+):
+    """
+    Finds an image on screen and clicks its center (+ optional offset).
+    Returns True on click, False if the image was not found or locate failed.
+    """
+    try:
+        cx, cy, _ = find_image_center(
+            img_path,
+            confidence=confidence,
+            grayscale=grayscale,
+            region=region,
+        )
+    except Exception as e:
+        resolved_img_path = _resolve_image_path(img_path)
+        if not Path(resolved_img_path).is_file():
+            print(f"[click_image_center] image file not found: {img_path}")
+        else:
+            print(f"[click_image_center] locate failed for {img_path}: {e}")
+        return False
+
+    if cx is None or cy is None:
+        return False
+
+    # Match botTools.click_image behavior on macOS Retina displays.
+    cx, cy = _retina_to_screen_coords(cx, cy)
+
+    ox, oy = offset if offset is not None else (0, 0)
+    click(cx + int(ox), cy + int(oy), delay=delay, right_click=right_click)
+    return True
 
 
 def place_unit(unit: str, pos: tuple[int, int], close: bool | None = None, region: tuple | None = None):
@@ -834,14 +920,14 @@ def place_unit(unit: str, pos: tuple[int, int], close: bool | None = None, regio
                 break
             time_out_2 -= 1
             time.sleep(0.1)
-        bt.click_image(f"Winter/{unit}_hb.png", confidence=0.8, grayscale=False, offset=(0, 0))
+        click_image_center(f"Winter/{unit}_hb.png", confidence=0.8, grayscale=False, offset=(0, 0))
     else:
         while not bt.does_exist(f"Winter/{unit}_hb.png", confidence=0.8, grayscale=False, region=region):
             if time_out_2 <= 0:
                 break
             time_out_2 -= 1
             time.sleep(0.1)
-        bt.click_image(f"Winter/{unit}_hb.png", confidence=0.8, grayscale=False, offset=(0, 0), region=region)
+        click_image_center(f"Winter/{unit}_hb.png", confidence=0.8, grayscale=False, offset=(0, 0), region=region)
 
     time.sleep(0.2)
 
@@ -882,9 +968,9 @@ def place_unit(unit: str, pos: tuple[int, int], close: bool | None = None, regio
         print("Retrying placement...")
         try:
             if region is None:
-                bt.click_image(f"Winter/{unit}_hb.png", confidence=0.8, grayscale=False, offset=(0, 0))
+                click_image_center(f"Winter/{unit}_hb.png", confidence=0.8, grayscale=False, offset=(0, 0))
             else:
-                bt.click_image(f"Winter/{unit}_hb.png", confidence=0.8, grayscale=False, offset=(0, 0), region=region)
+                click_image_center(f"Winter/{unit}_hb.png", confidence=0.8, grayscale=False, offset=(0, 0), region=region)
             time.sleep(0.2)
         except Exception as e:
             print(f"Error {e}")
@@ -939,7 +1025,7 @@ def place_hotbar_units():
                             kag_ability = [(645, 444), (743, 817), (1091, 244)]
                             for cl in kag_ability:
                                 if cl == (743, 817):
-                                    bt.click_image("Winter/Kaguya_Auto.png", confidence=0.8, grayscale=False, offset=[0,0]) 
+                                    click_image_center("Winter/Kaguya_Auto.png", confidence=0.8, grayscale=False, offset=[0,0]) 
                                 else:
                                     click(cl[0],cl[1],delay =0.1)
                                     time.sleep(1)
@@ -1040,7 +1126,7 @@ def sell_kaguya(): # Sells kaguya (cant reset while domain is active)
     click(1119, 450,delay =0.1)
     time.sleep(1)
     while not sold:
-        sell = bt.click_image('Winter/Kaguya.png',confidence=0.8,grayscale=False,offset=[0,0])
+        sell = click_image_center('Winter/Kaguya.png',confidence=0.8,grayscale=False,offset=[0,0])
         if g_toggle == False:
             break
         if sell == True:
@@ -1223,7 +1309,7 @@ def main():
 
                 # try up to 6 times (fast), then fall back
                 for _ in range(6):
-                    ok = bt.click_image("Winter/Tak_Detect.png",confidence=0.7,grayscale=True,offset=(0, -20))
+                    ok = click_image_center("Winter/Tak_Detect.png",confidence=0.7,grayscale=True,offset=(0, -20))
                     if ok:
                         clicked = True
                         break
@@ -1265,7 +1351,7 @@ def main():
             
             #DIR_NAMICARD
             if bt.does_exist("Winter/Nami_detect.png",confidence=0.8,grayscale=True):
-                bt.click_image("Winter/Nami_detect.png",confidence=0.8,grayscale=True,offset=(0,0))   
+                click_image_center("Winter/Nami_detect.png",confidence=0.8,grayscale=True,offset=(0,0))   
                 click(50,50,delay=0.1,right_click=True,dont_move=True)
             else:
                 click(Settings.CTM_NAMI_CARD[0], Settings.CTM_NAMI_CARD[1], delay =0.1, right_click=True) # Goes to nami's card
@@ -1657,7 +1743,7 @@ def main():
                 while True:
                     if bt.does_exist("Winter/Buu_Ability.png",confidence=0.5,grayscale=False):
                         print("Found Ability")
-                        bt.click_image("Winter/Buu_Ability.png",confidence=0.5,grayscale=False,offset=(0,0))
+                        click_image_center("Winter/Buu_Ability.png",confidence=0.5,grayscale=False,offset=(0,0))
                         time.sleep(1)
                         click(441,151,0.2)
                         time.sleep(1)
@@ -1776,15 +1862,15 @@ def main():
                         continue
 
                     # Run once on confirmed wave 149
-                    if (not done_path) and w == 149:
-                        print("Confirmed wave 149 — running pre-150 logic")
-
+                    if (not done_path) and w == 148:
+                        print("Confirmed wave 148 — running pre-150 logic")
+                        time.sleep(2)
                         quick_rts()
 
                         tap('f')  # Unit Manager Hotkey
                         time.sleep(0.7)
 
-                        ok = bt.click_image("Winter/LookDownFinder.png",confidence=0.8,grayscale=False,offset=(0, -50))
+                        ok = click_image_center("Winter/LookDownFinder.png",confidence=0.8,grayscale=False,offset=(0, -50))
                         print("[LookDownFinder click] ok =", ok)
 
                         tap('f')
@@ -1851,9 +1937,9 @@ def main():
                         continue
 
                     # Run once on confirmed wave 139
-                    if (not done_path) and w == 139:
-                        print("Confirmed wave 139 — running pre-140 logic")
-
+                    if (not done_path) and w == 138:
+                        print("Confirmed wave 138 — running pre-140 logic")
+                        time.sleep(2)
                         def spam_e():
                             while not done_path and g_toggle:
                                 tap('e')
@@ -1866,7 +1952,7 @@ def main():
                         tap('f')
                         time.sleep(0.7)
 
-                        ok = bt.click_image("Winter/LookDownFinder.png",confidence=0.8,grayscale=False,offset=(0, -50))
+                        ok = click_image_center("Winter/LookDownFinder.png",confidence=0.8,grayscale=False,offset=(0, -50))
                         print("[LookDownFinder click] ok =", ok)
 
                         tap('f')
